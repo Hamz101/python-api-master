@@ -1,7 +1,7 @@
 resource "aws_default_vpc" "default_vpc" {
 }
 
-# Providing a reference to our default subnets
+# Providing a reference to default subnets
 resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = "eu-west-2a"
 }
@@ -23,7 +23,7 @@ resource "aws_ecs_cluster" "task_cluster" {
 }
 
 resource "aws_ecs_task_definition" "my_flask_challenge" {
-  family                   = "my_flask_challenge" # Naming our first task
+  family                   = "my_flask_challenge" # Naming first task
   container_definitions    = <<DEFINITION
   [
     {
@@ -41,10 +41,10 @@ resource "aws_ecs_task_definition" "my_flask_challenge" {
     }
   ]
   DEFINITION
-  requires_compatibilities = ["FARGATE"] # Stating that we are using ECS Fargate
-  network_mode             = "awsvpc"    # Using awsvpc as our network mode as this is required for Fargate
-  memory                   = 512         # Specifying the memory our container requires
-  cpu                      = 256         # Specifying the CPU our container requires
+  requires_compatibilities = ["FARGATE"] # ECS Fargate
+  network_mode             = "awsvpc"    # Using aws vpc as our network mode
+  memory                   = 512         # Memory of the container 
+  cpu                      = 256         # CPU of the container 
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 }
 
@@ -70,26 +70,26 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 }
 
 resource "aws_ecs_service" "task_cluster" {
-  name            = "task_cluster"                                 # Naming our first service
-  cluster         = aws_ecs_cluster.task_cluster.id                # Referencing our created Cluster
-  task_definition = aws_ecs_task_definition.my_flask_challenge.arn # Referencing the task our service will spin up
+  name            = "task_cluster"                                 # First service Name
+  cluster         = aws_ecs_cluster.task_cluster.id                # Referencing the created Cluster
+  task_definition = aws_ecs_task_definition.my_flask_challenge.arn # Referencing the task service that will be spun up
   launch_type     = "FARGATE"
   desired_count   = 2 # Setting the number of containers to 2
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.target_group.arn # Referencing our target group
+    target_group_arn = aws_lb_target_group.target_group.arn # Referencing target group
     container_name   = aws_ecs_task_definition.my_flask_challenge.family
     container_port   = 5000 # Specifying the container port
   }
 
   network_configuration {
     subnets          = ["${aws_default_subnet.default_subnet_a.id}", "${aws_default_subnet.default_subnet_b.id}", "${aws_default_subnet.default_subnet_c.id}"]
-    assign_public_ip = true # Providing our containers with public IPs
+    assign_public_ip = true 
   }
 }
 
 resource "aws_alb" "application_load_balancer" {
-  name               = "task-lb-tf" # Naming our load balancer
+  name               = "task-lb-tf" # Naming load balancer
   load_balancer_type = "application"
   subnets = [ # Referencing the default subnets
     "${aws_default_subnet.default_subnet_a.id}",
